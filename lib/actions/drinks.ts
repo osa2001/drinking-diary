@@ -4,11 +4,31 @@ import { createServerClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { searchCocktails } from "@/lib/api/cocktail-db";
 import { searchBeers } from "@/lib/api/punk";
+import { updateModelWithFeedback } from "@/lib/ml/service";
 
 // Fallback when all other sources return few results
 const COMMON_DRINKS_FALLBACK = [
   "Beer", "IPA", "Vodka", "Gin", "Whiskey", "Margarita", "Wine",
 ];
+
+const DRINK_QUERY_ALIASES: Record<string, string[]> = {
+  "coors light": ["coors", "coorslite", "coors lt", "coorsl"],
+  "coors": ["coors light", "coors banquet"],
+  "bud light": ["budlight", "bud lt", "bud l"],
+  "budweiser": ["bud", "bud heavy", "budweiswer"],
+  "miller lite": ["miller light", "millerlite", "miller lt"],
+  "michelob ultra": ["michelob", "ultra", "michelobultra", "michelob ult"],
+  "stella artois": ["stella", "stella artios", "stela artois"],
+  "modelo especial": ["modelo", "modello", "modelo esp"],
+  "corona extra": ["corona", "coronae", "corona xtra"],
+  "guinness draught": ["guinness", "guiness", "guinness draft"],
+  "blue moon belgian white": ["blue moon", "bluemoon", "blue moon white"],
+  "heineken": ["heiniken", "heiny", "heinie", "henieken"],
+  "dos equis xx": ["dos equis", "xx", "dos xx"],
+  "kronenbourg 1664": ["1664", "kronenbourg"],
+  "truly hard seltzer": ["truly", "truly seltzer"],
+  "samuel adams": ["sam adams", "samadams", "samueladams"],
+};
 
 export type DrinkSuggestion = {
   drink_name: string;
@@ -26,6 +46,8 @@ export type DrinkSuggestion = {
 export async function searchDrinks(query: string): Promise<DrinkSuggestion[]> {
   const trimmed = query.trim().toLowerCase();
   if (trimmed.length < 2) return [];
+  const searchTerms = expandSearchTerms(trimmed);
+  const primaryTerm = searchTerms[0];
 
   const supabase = await createServerClient();
   const {
@@ -66,7 +88,8 @@ export async function searchDrinks(query: string): Promise<DrinkSuggestion[]> {
           });
       }
       for (const { drink_name, abv, note } of byName.values()) {
-        if (drink_name.toLowerCase().includes(trimmed)) {
+        const lowerName = drink_name.toLowerCase();
+        if (searchTerms.some((term) => lowerName.includes(term))) {
           addUnique({ drink_name, abv, note, source: "recent" });
         }
       }
@@ -74,11 +97,12 @@ export async function searchDrinks(query: string): Promise<DrinkSuggestion[]> {
 
     // 2. User custom recipes from profile
     try {
+      const recipeOrClause = buildIlikeOrClause("name", searchTerms);
       const { data: recipes } = await supabase
         .from("user_recipes")
         .select("name, abv, recipe_note")
         .eq("user_id", user.id)
-        .ilike("name", `%${trimmed}%`)
+        .or(recipeOrClause)
         .limit(50);
 
       if (recipes) {
@@ -98,10 +122,11 @@ export async function searchDrinks(query: string): Promise<DrinkSuggestion[]> {
 
   // 3. Drinks from Supabase (SQL catalog)
   try {
+    const drinkOrClause = buildIlikeOrClause("name", searchTerms);
     const { data: dbDrinks } = await supabase
       .from("drinks")
       .select("name, abv, default_note, category")
-      .ilike("name", `%${trimmed}%`);
+      .or(drinkOrClause);
 
     if (dbDrinks) {
       for (const row of dbDrinks) {
@@ -143,13 +168,49 @@ export async function searchDrinks(query: string): Promise<DrinkSuggestion[]> {
   // 6. Fallback static list
   if (results.length < 5) {
     for (const name of COMMON_DRINKS_FALLBACK) {
-      if (name.toLowerCase().includes(trimmed)) {
+      if (name.toLowerCase().includes(primaryTerm)) {
         addUnique({ drink_name: name, abv: null, note: null, source: "fallback" });
       }
     }
   }
 
   return results.slice(0, 15);
+}
+
+function expandSearchTerms(term: string) {
+  const normalized = term.trim().toLowerCase();
+  const compact = normalized.replace(/[^a-z0-9]/g, "");
+  const terms = new Set<string>([normalized]);
+
+  for (const [canonical, aliases] of Object.entries(DRINK_QUERY_ALIASES)) {
+    const canonicalCompact = canonical.replace(/[^a-z0-9]/g, "");
+    if (normalized === canonical || compact === canonicalCompact) {
+      terms.add(canonical);
+      for (const alias of aliases) terms.add(alias);
+      continue;
+    }
+
+    for (const alias of aliases) {
+      const aliasCompact = alias.replace(/[^a-z0-9]/g, "");
+      if (normalized === alias || compact === aliasCompact) {
+        terms.add(canonical);
+        for (const related of aliases) terms.add(related);
+      }
+    }
+  }
+
+  return Array.from(terms);
+}
+
+function buildIlikeOrClause(column: string, terms: string[]) {
+  return terms
+    .filter((term) => term.length >= 2)
+    .map((term) => `${column}.ilike.%${escapeLikeValue(term)}%`)
+    .join(",");
+}
+
+function escapeLikeValue(value: string) {
+  return value.replaceAll("%", "\\%").replaceAll(",", "\\,");
 }
 
 export type AddDrinkInput = {
@@ -336,11 +397,34 @@ export async function saveDailyIntoxication(formData: FormData) {
     return { error: error.message };
   }
 
+  const mappedLevel = sliderPercentToModelLevel(level);
+  await updateModelWithFeedback({
+    userId: user.id,
+    date,
+    actualLevel: mappedLevel,
+    referenceTime: new Date(),
+  });
+
   revalidatePath(`/diary/${date}`);
   revalidatePath("/diary");
   revalidatePath("/dashboard");
 
   return { success: true };
+}
+
+function sliderPercentToModelLevel(percent: number) {
+  const anchors = [0, 20, 40, 60, 100];
+  let index = 0;
+  let minDiff = Number.POSITIVE_INFINITY;
+  for (let i = 0; i < anchors.length; i += 1) {
+    const diff = Math.abs(percent - anchors[i]);
+    // Bias ties toward higher level for upper-end intoxication values.
+    if (diff <= minDiff) {
+      minDiff = diff;
+      index = i;
+    }
+  }
+  return index;
 }
 
 export async function updateDrinkLog(formData: FormData) {

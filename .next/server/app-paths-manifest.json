@@ -1,6 +1,6 @@
 {
-  "/diary/add/page": "app/diary/add/page.js",
-  "/diary/page": "app/diary/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
   "/dashboard/page": "app/dashboard/page.js",
-  "/diary/[date]/page": "app/diary/[date]/page.js"
+  "/login/page": "app/login/page.js",
+  "/intoxication/page": "app/intoxication/page.js"
 }

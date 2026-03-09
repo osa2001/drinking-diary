@@ -1,10 +1,18 @@
 import type { Metadata, Viewport } from "next";
 import "./globals.css";
+import { DevServiceWorkerReset } from "@/components/pwa/DevServiceWorkerReset";
 
 export const metadata: Metadata = {
   title: "Drinking Diary",
   description: "Track your drinking, understand your habits",
   manifest: "/manifest.json",
+  icons: {
+    icon: [
+      { url: "/icons/icon-192.png", type: "image/png" },
+      { url: "/icons/icon-512.png", type: "image/png" },
+    ],
+    apple: [{ url: "/icons/icon-192.png", type: "image/png" }],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
@@ -34,6 +42,7 @@ export default function RootLayout({
         <meta name="apple-mobile-web-app-status-bar-style" content="default" />
       </head>
       <body className="min-h-screen min-h-[100dvh] bg-slate-900 text-slate-100 antialiased">
+        <DevServiceWorkerReset />
         {children}
       </body>
     </html>

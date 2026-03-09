@@ -5,6 +5,14 @@ import { MobileNav } from "@/components/layout/MobileNav";
 import { deleteDrinkLog } from "@/lib/actions/drinks";
 import { IntoxicationSlider } from "@/components/diary/IntoxicationSlider";
 import { EditableDrinkLogItem } from "@/components/diary/EditableDrinkLogItem";
+import { BacPredictionSection } from "@/components/diary/BacPredictionSection";
+import { IntoxicationPredictionCard } from "@/components/diary/IntoxicationPredictionCard";
+import {
+  calculateBacPrediction,
+  getDefaultReferenceTime,
+  type BacDrinkInput,
+  type BacGender,
+} from "@/lib/bac";
 
 type SearchParams = {
   month?: string;
@@ -58,6 +66,42 @@ export default async function DiaryDatePage({
           note: string | null;
         }> };
 
+  let profile:
+    | {
+        gender: string | null;
+        weight_kg: number | null;
+      }
+    | null
+    | undefined;
+  try {
+    const result = await supabase
+      .from("profiles")
+      .select("gender, weight_kg")
+      .eq("id", user.id)
+      .maybeSingle();
+    profile = result.data;
+  } catch {
+    profile = null;
+  }
+
+  const drinksForBac: BacDrinkInput[] = (logs ?? []).map((log) => ({
+    amount: log.amount,
+    volume_ml: log.volume_ml,
+    abv: log.abv,
+    consumed_at: log.consumed_at,
+  }));
+  const hasEligibleDrinks = drinksForBac.some((d) => d.volume_ml != null && d.abv != null);
+  const hasProfileForBac =
+    profile?.weight_kg != null && Number.isFinite(profile.weight_kg) && profile.weight_kg > 0;
+  const prediction = hasProfileForBac
+    ? calculateBacPrediction({
+        drinks: drinksForBac,
+        weightKg: profile?.weight_kg ?? null,
+        gender: (profile?.gender as BacGender) ?? null,
+        referenceTime: getDefaultReferenceTime(date, drinksForBac),
+      })
+    : null;
+
   return (
     <div className="flex min-h-[100dvh] flex-col bg-gradient-to-b from-slate-950 to-slate-900 pb-16 sm:pb-20">
       <main className="mx-auto flex w-full max-w-md flex-1 flex-col px-4 pt-6 pb-6 sm:px-6">
@@ -87,6 +131,15 @@ export default async function DiaryDatePage({
         <section>
           <IntoxicationSlider date={date} initialValue={currentIntoxication} />
         </section>
+
+        <BacPredictionSection
+          prediction={prediction}
+          hasProfileForBac={hasProfileForBac}
+          hasEligibleDrinks={hasEligibleDrinks}
+          detailHref={`/diary/${date}/bac?month=${monthParam}`}
+        />
+
+        <IntoxicationPredictionCard date={date} savedSliderPercent={currentIntoxication} />
 
         <section className="mt-4 rounded-2xl border border-slate-700 bg-slate-800/40 p-4 shadow-sm shadow-black/20">
           <h2 className="mb-3 text-sm font-medium text-slate-200">Records</h2>
@@ -133,4 +186,5 @@ function formatSelectedDate(isoDate: string) {
     year: "numeric",
   });
 }
+
 

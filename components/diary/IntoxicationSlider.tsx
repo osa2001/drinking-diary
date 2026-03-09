@@ -25,6 +25,11 @@ export function IntoxicationSlider({ date, initialValue }: IntoxicationSliderPro
         setMessage(result.error);
       } else {
         setMessage("Saved");
+        window.dispatchEvent(
+          new CustomEvent("intoxication-saved", {
+            detail: { date, intoxicationLevel: value },
+          })
+        );
       }
     });
   }
@@ -47,9 +52,12 @@ export function IntoxicationSlider({ date, initialValue }: IntoxicationSliderPro
         aria-label="Intoxication level"
       />
 
-      <div className="mt-2 flex items-center justify-between text-[11px] text-slate-500">
-        <span>Sober (0%)</span>
-        <span>Very drunk (100%)</span>
+      <div className="mt-2 grid grid-cols-5 gap-1 text-center text-[11px] text-slate-500">
+        <span>Sober<br />0%</span>
+        <span>Tipsy<br />20%</span>
+        <span>Buzzed<br />40%</span>
+        <span>Drunk<br />60%</span>
+        <span>Wasted<br />100%</span>
       </div>
 
       <div className="mt-3 flex items-center gap-3">

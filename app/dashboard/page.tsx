@@ -69,6 +69,15 @@ export default async function DashboardPage() {
             <p className="font-medium">Profile</p>
             <p className="mt-1 text-xs text-slate-400">Update your details</p>
           </Link>
+          <Link
+            href="/intoxication"
+            className="rounded-xl border border-emerald-600/40 bg-emerald-900/10 p-4 text-sm text-emerald-100 hover:bg-emerald-800/20"
+          >
+            <p className="font-medium">Intoxication Prediction</p>
+            <p className="mt-1 text-xs text-emerald-200/80">
+              Plan drinks and forecast intoxication
+            </p>
+          </Link>
         </section>
       </main>
 
