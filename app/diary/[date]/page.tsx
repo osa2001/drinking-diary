@@ -2,8 +2,9 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createServerClient } from "@/lib/supabase/server";
 import { MobileNav } from "@/components/layout/MobileNav";
-import { DrinkLogForm } from "@/components/diary/DrinkLogForm";
 import { deleteDrinkLog } from "@/lib/actions/drinks";
+import { IntoxicationSlider } from "@/components/diary/IntoxicationSlider";
+import { EditableDrinkLogItem } from "@/components/diary/EditableDrinkLogItem";
 
 type SearchParams = {
   month?: string;
@@ -32,17 +33,18 @@ export default async function DiaryDatePage({
 
   const { data: sessions } = await supabase
     .from("drinking_sessions")
-    .select("id")
+    .select("id, intoxication_level")
     .eq("user_id", user.id)
     .eq("session_date", date);
 
   const sessionIds = sessions?.map((s) => s.id) ?? [];
+  const currentIntoxication = sessions?.[0]?.intoxication_level ?? 0;
 
   const { data: logs } =
     sessionIds.length > 0
       ? await supabase
           .from("drink_logs")
-          .select("id, drink_name, amount, abv, consumed_at, note")
+          .select("id, drink_name, amount, volume_ml, abv, consumed_at, note")
           .eq("user_id", user.id)
           .in("session_id", sessionIds)
           .order("consumed_at", { ascending: false })
@@ -50,67 +52,54 @@ export default async function DiaryDatePage({
           id: string;
           drink_name: string;
           amount: number;
+          volume_ml: number | null;
           abv: number | null;
           consumed_at: string;
           note: string | null;
         }> };
 
-  const redirectTo = `/diary/${date}?month=${monthParam}`;
-
   return (
-    <div className="flex min-h-[100dvh] flex-col pb-16 sm:pb-20">
-      <main className="flex-1 px-4 pt-6 pb-6 sm:px-6">
-        <div className="mb-4 flex items-center justify-between">
+    <div className="flex min-h-[100dvh] flex-col bg-gradient-to-b from-slate-950 to-slate-900 pb-16 sm:pb-20">
+      <main className="mx-auto flex w-full max-w-md flex-1 flex-col px-4 pt-6 pb-6 sm:px-6">
+        <div className="mb-4 flex items-start justify-between gap-3">
           <div>
             <h1 className="text-xl font-semibold text-slate-100">
               {formatSelectedDate(date)}
             </h1>
             <p className="mt-1 text-sm text-slate-400">Daily drinking records</p>
           </div>
-          <Link
-            href={`/diary?month=${monthParam}`}
-            className="rounded-md border border-slate-600 px-3 py-2 text-xs text-slate-200 hover:bg-slate-700"
-          >
-            Back to Calendar
-          </Link>
+          <div className="flex shrink-0 items-center gap-2">
+            <Link
+              href={`/diary/add?date=${date}&month=${monthParam}`}
+              className="rounded-md bg-sky-600 px-3 py-2 text-xs font-medium text-white hover:bg-sky-500"
+            >
+              Add drink
+            </Link>
+            <Link
+              href={`/diary?month=${monthParam}`}
+              className="rounded-md border border-slate-600 px-3 py-2 text-xs text-slate-200 hover:bg-slate-700"
+            >
+              Back to Calendar
+            </Link>
+          </div>
         </div>
 
-        <section className="rounded-xl border border-slate-700 bg-slate-800/40 p-4">
-          <h2 className="text-sm font-medium text-slate-200">Add record</h2>
-          <div className="mt-4">
-            <DrinkLogForm sessionDate={date} redirectTo={redirectTo} />
-          </div>
+        <section>
+          <IntoxicationSlider date={date} initialValue={currentIntoxication} />
         </section>
 
-        <section className="mt-4 rounded-xl border border-slate-700 bg-slate-800/40 p-4">
+        <section className="mt-4 rounded-2xl border border-slate-700 bg-slate-800/40 p-4 shadow-sm shadow-black/20">
           <h2 className="mb-3 text-sm font-medium text-slate-200">Records</h2>
           {!logs || logs.length === 0 ? (
             <p className="text-sm text-slate-400">No records for this date.</p>
           ) : (
             <ul className="space-y-2">
               {logs.map((log) => (
-                <li
+                <EditableDrinkLogItem
                   key={log.id}
-                  className="flex items-center justify-between gap-3 rounded-lg border border-slate-700 bg-slate-800/50 px-4 py-3"
-                >
-                  <div>
-                    <span className="font-medium text-slate-100">
-                      {log.drink_name}
-                    </span>
-                    {log.amount > 1 && (
-                      <span className="ml-1 text-slate-400">×{log.amount}</span>
-                    )}
-                    {log.abv != null && (
-                      <span className="ml-1 text-slate-500">{log.abv}%</span>
-                    )}
-                    {log.note && (
-                      <p className="mt-0.5 text-sm text-slate-500">{log.note}</p>
-                    )}
-                  </div>
-                  <div className="flex shrink-0 items-center gap-3">
-                    <span className="text-sm text-slate-500">
-                      {formatTime(log.consumed_at)}
-                    </span>
+                  log={log}
+                  date={date}
+                  deleteForm={
                     <form action={deleteDrinkLog}>
                       <input type="hidden" name="logId" value={log.id} />
                       <button
@@ -120,8 +109,8 @@ export default async function DiaryDatePage({
                         Delete
                       </button>
                     </form>
-                  </div>
-                </li>
+                  }
+                />
               ))}
             </ul>
           )}
@@ -145,9 +134,3 @@ function formatSelectedDate(isoDate: string) {
   });
 }
 
-function formatTime(isoString: string) {
-  return new Date(isoString).toLocaleTimeString("en-US", {
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}

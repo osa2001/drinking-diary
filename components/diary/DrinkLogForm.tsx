@@ -13,7 +13,7 @@ type DrinkLogFormProps = {
 export function DrinkLogForm({ sessionDate, redirectTo = "/diary" }: DrinkLogFormProps) {
   const router = useRouter();
   const [drinkName, setDrinkName] = useState("");
-  const [amount, setAmount] = useState(1);
+  const [volumeMl, setVolumeMl] = useState("330");
   const [abv, setAbv] = useState("");
   const [note, setNote] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -26,7 +26,7 @@ export function DrinkLogForm({ sessionDate, redirectTo = "/diary" }: DrinkLogFor
 
     const result = await addDrink({
       drinkName,
-      amount,
+      volumeMl: volumeMl ? parseInt(volumeMl, 10) : undefined,
       abv: abv ? parseFloat(abv) : undefined,
       note: note || undefined,
       sessionDate,
@@ -40,7 +40,7 @@ export function DrinkLogForm({ sessionDate, redirectTo = "/diary" }: DrinkLogFor
     }
 
     setDrinkName("");
-    setAmount(1);
+    setVolumeMl("330");
     setAbv("");
     setNote("");
     router.refresh();
@@ -61,18 +61,19 @@ export function DrinkLogForm({ sessionDate, redirectTo = "/diary" }: DrinkLogFor
 
       <div>
         <label
-          htmlFor="amount"
+          htmlFor="volumeMl"
           className="mb-1 block text-sm font-medium text-slate-300"
         >
-          Amount
+          Volume (ml)
         </label>
         <input
-          id="amount"
+          id="volumeMl"
           type="number"
           min={1}
-          max={99}
-          value={amount}
-          onChange={(e) => setAmount(parseInt(e.target.value, 10) || 1)}
+          max={5000}
+          value={volumeMl}
+          onChange={(e) => setVolumeMl(e.target.value)}
+          placeholder="e.g. 330, 500"
           className="w-full rounded-lg border border-slate-600 bg-slate-800 px-4 py-3 text-slate-100 focus:border-sky-500 focus:outline-none focus:ring-1 focus:ring-sky-500"
         />
       </div>

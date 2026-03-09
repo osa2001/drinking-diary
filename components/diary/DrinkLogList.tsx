@@ -40,8 +40,10 @@ export async function DrinkLogList() {
   }
 
   const groupedByDate = logs.reduce<Record<string, typeof logs>>((acc, log) => {
-    const session = log.drinking_sessions as { session_date: string } | null;
-    const date = session?.session_date ?? new Date(log.consumed_at).toISOString().split("T")[0];
+    const sessions = log.drinking_sessions as Array<{ session_date: string }> | null;
+    const date =
+      sessions?.[0]?.session_date ??
+      new Date(log.consumed_at).toISOString().split("T")[0];
     if (!acc[date]) acc[date] = [];
     acc[date].push(log);
     return acc;

@@ -2,6 +2,7 @@ import { redirect } from "next/navigation";
 import { createServerClient } from "@/lib/supabase/server";
 import { MobileNav } from "@/components/layout/MobileNav";
 import Link from "next/link";
+import { MonthPicker } from "@/components/diary/MonthPicker";
 
 type SearchParams = {
   month?: string;
@@ -58,13 +59,14 @@ export default async function DiaryPage({
     month: "long",
     year: "numeric",
   });
+  const yearOptions = buildYearOptions(year, 5, 2);
   const prevMonth = formatMonth(new Date(year, month - 2, 1));
   const nextMonth = formatMonth(new Date(year, month, 1));
   const todayIso = formatDateISO(today);
 
   return (
-    <div className="flex min-h-[100dvh] flex-col pb-16 sm:pb-20">
-      <main className="flex-1 px-4 pt-6 pb-6 sm:px-6">
+    <div className="flex min-h-[100dvh] flex-col bg-gradient-to-b from-slate-950 to-slate-900 pb-16 sm:pb-20">
+      <main className="mx-auto flex w-full max-w-md flex-1 flex-col px-4 pt-6 pb-6 sm:px-6">
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-xl font-semibold text-slate-100">
@@ -76,15 +78,20 @@ export default async function DiaryPage({
           </div>
         </div>
 
-        <section className="mt-6 rounded-xl border border-slate-700 bg-slate-800/40 p-4">
-          <div className="mb-3 flex items-center justify-between">
+        <section className="mt-6 rounded-2xl border border-slate-700 bg-slate-800/40 p-4 shadow-sm shadow-black/20">
+          <div className="mb-3 flex items-center justify-between gap-2">
             <Link
               href={`/diary?month=${prevMonth}`}
               className="rounded-md border border-slate-600 px-2 py-1 text-xs text-slate-300 hover:bg-slate-700"
             >
               Prev
             </Link>
-            <h2 className="text-sm font-medium text-slate-200">{monthTitle}</h2>
+            <div className="min-w-0 flex-1">
+              <h2 className="text-center text-sm font-medium text-slate-200">{monthTitle}</h2>
+              <div className="mt-1">
+                <MonthPicker value={monthParam} years={yearOptions} />
+              </div>
+            </div>
             <Link
               href={`/diary?month=${nextMonth}`}
               className="rounded-md border border-slate-600 px-2 py-1 text-xs text-slate-300 hover:bg-slate-700"
@@ -109,7 +116,7 @@ export default async function DiaryPage({
                   {day ? (
                     <Link
                       href={`/diary/${day}?month=${monthParam}`}
-                      className={`flex h-full w-full flex-col items-center justify-center rounded-md border text-xs ${
+                      className={`flex h-full w-full flex-col items-center justify-center rounded-lg border text-xs ${
                         isToday
                           ? "border-sky-500 bg-sky-500/20 text-sky-200"
                           : isCurrentMonth
@@ -132,7 +139,7 @@ export default async function DiaryPage({
             })}
           </div>
         </section>
-        <p className="mt-4 text-xs text-slate-400">
+        <p className="mt-4 text-center text-xs text-slate-400">
           Tap a date to open that day&apos;s records.
         </p>
       </main>
@@ -142,14 +149,19 @@ export default async function DiaryPage({
 }
 
 function formatDateISO(date: Date) {
-  return date.toISOString().slice(0, 10);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }
 
 function formatMonth(date: Date) {
-  return date.toISOString().slice(0, 7);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  return `${year}-${month}`;
 }
 
-function isValidMonth(month?: string) {
+function isValidMonth(month?: string): month is string {
   return !!month && /^\d{4}-\d{2}$/.test(month);
 }
 
@@ -164,4 +176,14 @@ function buildCalendarDays(year: number, month: number) {
   }
   while (days.length % 7 !== 0) days.push(null);
   return days;
+}
+
+function buildYearOptions(anchorYear: number, yearsBack: number, yearsForward: number) {
+  const years: number[] = [];
+
+  for (let year = anchorYear - yearsBack; year <= anchorYear + yearsForward; year++) {
+    years.push(year);
+  }
+
+  return years;
 }

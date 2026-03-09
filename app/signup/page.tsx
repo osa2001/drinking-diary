@@ -29,9 +29,11 @@ export default function SignupPage() {
   }
 
   return (
-    <main className="flex min-h-[100dvh] flex-col items-center justify-center px-6 pb-[env(safe-area-inset-bottom)]">
-      <div className="w-full max-w-xs">
-        <h1 className="mb-2 text-2xl font-bold tracking-tight">Sign up</h1>
+    <main className="flex min-h-[100dvh] flex-col items-center justify-center bg-gradient-to-b from-slate-950 to-slate-900 px-6 pb-[env(safe-area-inset-bottom)]">
+      <div className="w-full max-w-xs rounded-2xl border border-slate-700 bg-slate-800/50 p-5 shadow-lg shadow-black/20">
+        <h1 className="mb-2 text-2xl font-bold tracking-tight text-slate-100">
+          Sign up
+        </h1>
         <p className="mb-8 text-slate-400">Create your Drinking Diary account</p>
 
         <form onSubmit={handleSubmit} className="space-y-4">

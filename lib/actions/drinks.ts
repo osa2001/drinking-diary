@@ -14,7 +14,13 @@ export type DrinkSuggestion = {
   drink_name: string;
   abv: number | null;
   note: string | null;
-  source: "recent" | "database" | "cocktaildb" | "punkapi" | "fallback";
+  source:
+    | "recent"
+    | "recipe"
+    | "database"
+    | "cocktaildb"
+    | "punkapi"
+    | "fallback";
 };
 
 export async function searchDrinks(query: string): Promise<DrinkSuggestion[]> {
@@ -65,9 +71,32 @@ export async function searchDrinks(query: string): Promise<DrinkSuggestion[]> {
         }
       }
     }
+
+    // 2. User custom recipes from profile
+    try {
+      const { data: recipes } = await supabase
+        .from("user_recipes")
+        .select("name, abv, recipe_note")
+        .eq("user_id", user.id)
+        .ilike("name", `%${trimmed}%`)
+        .limit(50);
+
+      if (recipes) {
+        for (const recipe of recipes) {
+          addUnique({
+            drink_name: recipe.name.trim(),
+            abv: recipe.abv,
+            note: recipe.recipe_note?.trim() || null,
+            source: "recipe",
+          });
+        }
+      }
+    } catch {
+      // user_recipes table may not exist yet
+    }
   }
 
-  // 2. Drinks from Supabase (SQL catalog)
+  // 3. Drinks from Supabase (SQL catalog)
   try {
     const { data: dbDrinks } = await supabase
       .from("drinks")
@@ -85,7 +114,7 @@ export async function searchDrinks(query: string): Promise<DrinkSuggestion[]> {
     // drinks table may not exist yet
   }
 
-  // 3 & 4. External APIs (parallel)
+  // 4 & 5. External APIs (parallel)
   const [cocktailResults, beerResults] = await Promise.all([
     searchCocktails(query),
     searchBeers(query),
@@ -111,7 +140,7 @@ export async function searchDrinks(query: string): Promise<DrinkSuggestion[]> {
     });
   }
 
-  // 5. Fallback static list
+  // 6. Fallback static list
   if (results.length < 5) {
     for (const name of COMMON_DRINKS_FALLBACK) {
       if (name.toLowerCase().includes(trimmed)) {
@@ -125,7 +154,6 @@ export async function searchDrinks(query: string): Promise<DrinkSuggestion[]> {
 
 export type AddDrinkInput = {
   drinkName: string;
-  amount?: number;
   abv?: number;
   volumeMl?: number;
   note?: string;
@@ -142,10 +170,16 @@ export async function addDrink(input: AddDrinkInput) {
     return { error: "Not authenticated" };
   }
 
-  const { drinkName, amount = 1, abv, volumeMl, note, sessionDate } = input;
+  const { drinkName, abv, volumeMl, note, sessionDate } = input;
 
   if (!drinkName.trim()) {
     return { error: "Drink name is required" };
+  }
+  if (
+    volumeMl != null &&
+    (!Number.isFinite(volumeMl) || volumeMl <= 0 || volumeMl > 5000)
+  ) {
+    return { error: "Volume must be between 1ml and 5000ml" };
   }
 
   // Get or create session for requested date (default: today)
@@ -183,7 +217,7 @@ export async function addDrink(input: AddDrinkInput) {
     session_id: sessionId,
     user_id: user.id,
     drink_name: drinkName.trim(),
-    amount: Math.max(1, amount),
+    amount: 1,
     abv: abv ?? null,
     volume_ml: volumeMl ?? null,
     note: note?.trim() || null,
@@ -203,7 +237,43 @@ export async function addDrink(input: AddDrinkInput) {
 export async function deleteDrinkLog(formData: FormData) {
   const logId = formData.get("logId");
   if (typeof logId !== "string" || !logId.trim()) {
-    return { error: "Invalid log id" };
+    return;
+  }
+
+  const supabase = await createServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return;
+  }
+
+  const { error } = await supabase
+    .from("drink_logs")
+    .delete()
+    .eq("id", logId)
+    .eq("user_id", user.id);
+
+  if (error) {
+    return;
+  }
+
+  revalidatePath("/diary");
+  revalidatePath("/dashboard");
+}
+
+export async function saveDailyIntoxication(formData: FormData) {
+  const date = formData.get("date");
+  const levelRaw = formData.get("intoxicationLevel");
+
+  if (typeof date !== "string" || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return { error: "Invalid date" };
+  }
+
+  const level = Number(levelRaw);
+  if (!Number.isFinite(level) || level < 0 || level > 100) {
+    return { error: "Intoxication level must be between 0 and 100" };
   }
 
   const supabase = await createServerClient();
@@ -215,9 +285,99 @@ export async function deleteDrinkLog(formData: FormData) {
     return { error: "Not authenticated" };
   }
 
+  // Reuse or create a session for this date
+  const { data: existingSession } = await supabase
+    .from("drinking_sessions")
+    .select("id")
+    .eq("user_id", user.id)
+    .eq("session_date", date)
+    .limit(1)
+    .single();
+
+  let sessionId: string;
+  if (existingSession) {
+    sessionId = existingSession.id;
+  } else {
+    const { data: newSession, error: createError } = await supabase
+      .from("drinking_sessions")
+      .insert({
+        user_id: user.id,
+        session_date: date,
+      })
+      .select("id")
+      .single();
+
+    if (createError || !newSession) {
+      return { error: createError?.message ?? "Unable to create session" };
+    }
+    sessionId = newSession.id;
+  }
+
+  const { error } = await supabase
+    .from("drinking_sessions")
+    .update({ intoxication_level: Math.round(level) })
+    .eq("id", sessionId)
+    .eq("user_id", user.id);
+
+  if (error) {
+    return { error: error.message };
+  }
+
+  revalidatePath(`/diary/${date}`);
+  revalidatePath("/diary");
+  revalidatePath("/dashboard");
+
+  return { success: true };
+}
+
+export async function updateDrinkLog(formData: FormData) {
+  const logId = formData.get("logId");
+  const drinkName = formData.get("drinkName");
+  const volumeMlRaw = formData.get("volumeMl");
+  const abvRaw = formData.get("abv");
+  const noteRaw = formData.get("note");
+  const date = formData.get("date");
+
+  if (typeof logId !== "string" || !logId.trim()) {
+    return { error: "Invalid log id" };
+  }
+  if (typeof drinkName !== "string" || !drinkName.trim()) {
+    return { error: "Drink name is required" };
+  }
+
+  const volumeMl = Number(volumeMlRaw);
+  if (!Number.isFinite(volumeMl) || volumeMl < 1 || volumeMl > 5000) {
+    return { error: "Volume must be between 1ml and 5000ml" };
+  }
+
+  const abv =
+    typeof abvRaw === "string" && abvRaw.trim() !== ""
+      ? Number(abvRaw)
+      : null;
+  if (abv != null && (!Number.isFinite(abv) || abv < 0 || abv > 100)) {
+    return { error: "ABV must be between 0 and 100" };
+  }
+
+  const note =
+    typeof noteRaw === "string" && noteRaw.trim() !== "" ? noteRaw.trim() : null;
+
+  const supabase = await createServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { error: "Not authenticated" };
+  }
+
   const { error } = await supabase
     .from("drink_logs")
-    .delete()
+    .update({
+      drink_name: drinkName.trim(),
+      amount: 1,
+      volume_ml: Math.round(volumeMl),
+      abv,
+      note,
+    })
     .eq("id", logId)
     .eq("user_id", user.id);
 
@@ -225,6 +385,9 @@ export async function deleteDrinkLog(formData: FormData) {
     return { error: error.message };
   }
 
+  if (typeof date === "string" && /^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    revalidatePath(`/diary/${date}`);
+  }
   revalidatePath("/diary");
   revalidatePath("/dashboard");
 

@@ -15,10 +15,10 @@ export function MobileNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-700/80 bg-slate-900/95 backdrop-blur supports-[backdrop-filter]:bg-slate-900/80"
+      className="fixed bottom-0 left-0 right-0 z-50 border-t border-slate-700/70 bg-slate-950/95 backdrop-blur supports-[backdrop-filter]:bg-slate-950/80"
       style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom))" }}
     >
-      <div className="flex h-14 items-center justify-around sm:h-16">
+      <div className="mx-auto flex h-14 w-full max-w-md items-center justify-around px-2 sm:h-16">
         {navItems.map(({ href, label, icon: Icon }) => {
           const isActive =
             pathname === href ||
@@ -28,10 +28,10 @@ export function MobileNav() {
             <Link
               key={href}
               href={href}
-              className={`flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-2 py-2 text-xs transition-colors ${
+              className={`flex min-w-0 flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-2 py-2 text-xs transition-colors ${
                 isActive
-                  ? "text-sky-400"
-                  : "text-slate-400 hover:text-slate-200"
+                  ? "bg-sky-500/15 text-sky-300"
+                  : "text-slate-400 hover:bg-slate-800/70 hover:text-slate-200"
               }`}
               aria-current={isActive ? "page" : undefined}
             >
