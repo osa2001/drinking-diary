@@ -227,9 +227,22 @@ export async function addDrink(input: AddDrinkInput) {
     return { error: logError.message };
   }
 
+  // Persist custom drinks to the user's recipe library so they show up next time.
+  await supabase.from("user_recipes").upsert(
+    {
+      user_id: user.id,
+      name: drinkName.trim(),
+      abv: abv ?? null,
+      recipe_note: note?.trim() || null,
+    },
+    { onConflict: "user_id,name" }
+  );
+
   revalidatePath("/diary");
   revalidatePath("/diary/add");
   revalidatePath("/dashboard");
+  revalidatePath("/profile");
+  revalidatePath("/profile/recipes");
 
   return { success: true };
 }

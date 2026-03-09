@@ -90,6 +90,11 @@ export function DrinkSearchInput({
     setSuggestions([]);
   }
 
+  function handleInputChange(nextValue: string) {
+    setQuery(nextValue);
+    onChange(nextValue);
+  }
+
   function handleKeyDown(e: React.KeyboardEvent) {
     if (!open || suggestions.length === 0) {
       if (e.key === "Escape") setOpen(false);
@@ -123,7 +128,7 @@ export function DrinkSearchInput({
         id={id}
         type="text"
         value={query}
-        onChange={(e) => setQuery(e.target.value)}
+        onChange={(e) => handleInputChange(e.target.value)}
         onFocus={() => query.length >= 2 && setOpen(true)}
         onKeyDown={handleKeyDown}
         placeholder={placeholder}

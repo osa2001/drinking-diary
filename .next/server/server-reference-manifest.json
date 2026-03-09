@@ -1,30 +1,56 @@
 {
   "node": {
-    "146ce53f56b1d8cb1017a5d61b7f4247f5baf365": {
+    "0792ebc4a925d24389c7980f3fd3654728d7045c": {
       "workers": {
-        "app/profile/recipes/page": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22C%3A%5C%5CUsers%5C%5C13917%5C%5CDesktop%5C%5CVibe%20Coding%5C%5Clib%5C%5Cactions%5C%5Crecipes.ts%22%2C%5B%22deleteRecipe%22%2C%22createRecipe%22%2C%22updateRecipe%22%5D%5D%5D&__client_imported__=!"
+        "app/diary/add/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22C%3A%5C%5CUsers%5C%5C13917%5C%5CDesktop%5C%5CVibe%20Coding%5C%5Clib%5C%5Cactions%5C%5Cdrinks.ts%22%2C%5B%22searchDrinks%22%2C%22updateDrinkLog%22%2C%22addDrink%22%2C%22saveDailyIntoxication%22%2C%22deleteDrinkLog%22%5D%5D%5D&__client_imported__=true!",
+        "app/diary/[date]/page": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22C%3A%5C%5CUsers%5C%5C13917%5C%5CDesktop%5C%5CVibe%20Coding%5C%5Clib%5C%5Cactions%5C%5Cdrinks.ts%22%2C%5B%22searchDrinks%22%2C%22updateDrinkLog%22%2C%22addDrink%22%2C%22saveDailyIntoxication%22%2C%22deleteDrinkLog%22%5D%5D%5D&__client_imported__=!"
       },
       "layer": {
-        "app/profile/recipes/page": "rsc"
+        "app/diary/add/page": "action-browser",
+        "app/diary/[date]/page": "rsc"
       }
     },
-    "405ae8bcfaf435f92d9d99404fef8f2fcde5a81d": {
+    "5b6ffb09c1a00559b8d05fdb2d5da1ea63a7c7fb": {
       "workers": {
-        "app/profile/recipes/page": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22C%3A%5C%5CUsers%5C%5C13917%5C%5CDesktop%5C%5CVibe%20Coding%5C%5Clib%5C%5Cactions%5C%5Crecipes.ts%22%2C%5B%22deleteRecipe%22%2C%22createRecipe%22%2C%22updateRecipe%22%5D%5D%5D&__client_imported__=!"
+        "app/diary/add/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22C%3A%5C%5CUsers%5C%5C13917%5C%5CDesktop%5C%5CVibe%20Coding%5C%5Clib%5C%5Cactions%5C%5Cdrinks.ts%22%2C%5B%22searchDrinks%22%2C%22updateDrinkLog%22%2C%22addDrink%22%2C%22saveDailyIntoxication%22%2C%22deleteDrinkLog%22%5D%5D%5D&__client_imported__=true!",
+        "app/diary/[date]/page": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22C%3A%5C%5CUsers%5C%5C13917%5C%5CDesktop%5C%5CVibe%20Coding%5C%5Clib%5C%5Cactions%5C%5Cdrinks.ts%22%2C%5B%22searchDrinks%22%2C%22updateDrinkLog%22%2C%22addDrink%22%2C%22saveDailyIntoxication%22%2C%22deleteDrinkLog%22%5D%5D%5D&__client_imported__=!"
       },
       "layer": {
-        "app/profile/recipes/page": "rsc"
+        "app/diary/add/page": "action-browser",
+        "app/diary/[date]/page": "rsc"
       }
     },
-    "49c67cfe02acc6b64209b87633a181d5e6feac15": {
+    "6ec854a98d5c03a654dcfa1d447207ca9eb15dcf": {
       "workers": {
-        "app/profile/recipes/page": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22C%3A%5C%5CUsers%5C%5C13917%5C%5CDesktop%5C%5CVibe%20Coding%5C%5Clib%5C%5Cactions%5C%5Crecipes.ts%22%2C%5B%22deleteRecipe%22%2C%22createRecipe%22%2C%22updateRecipe%22%5D%5D%5D&__client_imported__=!"
+        "app/diary/add/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22C%3A%5C%5CUsers%5C%5C13917%5C%5CDesktop%5C%5CVibe%20Coding%5C%5Clib%5C%5Cactions%5C%5Cdrinks.ts%22%2C%5B%22searchDrinks%22%2C%22updateDrinkLog%22%2C%22addDrink%22%2C%22saveDailyIntoxication%22%2C%22deleteDrinkLog%22%5D%5D%5D&__client_imported__=true!",
+        "app/diary/[date]/page": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22C%3A%5C%5CUsers%5C%5C13917%5C%5CDesktop%5C%5CVibe%20Coding%5C%5Clib%5C%5Cactions%5C%5Cdrinks.ts%22%2C%5B%22searchDrinks%22%2C%22updateDrinkLog%22%2C%22addDrink%22%2C%22saveDailyIntoxication%22%2C%22deleteDrinkLog%22%5D%5D%5D&__client_imported__=!"
       },
       "layer": {
-        "app/profile/recipes/page": "rsc"
+        "app/diary/add/page": "action-browser",
+        "app/diary/[date]/page": "rsc"
+      }
+    },
+    "bd22cffaae01b01b1ac7d4d134718bfbf8a79e79": {
+      "workers": {
+        "app/diary/add/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22C%3A%5C%5CUsers%5C%5C13917%5C%5CDesktop%5C%5CVibe%20Coding%5C%5Clib%5C%5Cactions%5C%5Cdrinks.ts%22%2C%5B%22searchDrinks%22%2C%22updateDrinkLog%22%2C%22addDrink%22%2C%22saveDailyIntoxication%22%2C%22deleteDrinkLog%22%5D%5D%5D&__client_imported__=true!",
+        "app/diary/[date]/page": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22C%3A%5C%5CUsers%5C%5C13917%5C%5CDesktop%5C%5CVibe%20Coding%5C%5Clib%5C%5Cactions%5C%5Cdrinks.ts%22%2C%5B%22searchDrinks%22%2C%22updateDrinkLog%22%2C%22addDrink%22%2C%22saveDailyIntoxication%22%2C%22deleteDrinkLog%22%5D%5D%5D&__client_imported__=!"
+      },
+      "layer": {
+        "app/diary/add/page": "action-browser",
+        "app/diary/[date]/page": "rsc"
+      }
+    },
+    "e9e43a9f1fb0350b2727c33fcb42d7b1ac8804b2": {
+      "workers": {
+        "app/diary/add/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22C%3A%5C%5CUsers%5C%5C13917%5C%5CDesktop%5C%5CVibe%20Coding%5C%5Clib%5C%5Cactions%5C%5Cdrinks.ts%22%2C%5B%22searchDrinks%22%2C%22updateDrinkLog%22%2C%22addDrink%22%2C%22saveDailyIntoxication%22%2C%22deleteDrinkLog%22%5D%5D%5D&__client_imported__=true!",
+        "app/diary/[date]/page": "(rsc)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22C%3A%5C%5CUsers%5C%5C13917%5C%5CDesktop%5C%5CVibe%20Coding%5C%5Clib%5C%5Cactions%5C%5Cdrinks.ts%22%2C%5B%22searchDrinks%22%2C%22updateDrinkLog%22%2C%22addDrink%22%2C%22saveDailyIntoxication%22%2C%22deleteDrinkLog%22%5D%5D%5D&__client_imported__=!"
+      },
+      "layer": {
+        "app/diary/add/page": "action-browser",
+        "app/diary/[date]/page": "rsc"
       }
     }
   },
   "edge": {},
-  "encryptionKey": "AaleXqsXN+JfBgQCMGJC1xZIxUBnom9R48gze3rHpsA="
+  "encryptionKey": "jJ7UrIaCa2zh2a/eY49irCFFUpXTvlo9iVr7bwyGLsU="
 }
