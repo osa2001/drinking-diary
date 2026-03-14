@@ -397,6 +397,13 @@ export async function saveDailyIntoxication(formData: FormData) {
     return { error: error.message };
   }
 
+  // Keep raw drink logs aligned with unified subjective 0-100 input.
+  await supabase
+    .from("drink_logs")
+    .update({ self_reported_intoxication_100: Math.round(level) })
+    .eq("session_id", sessionId)
+    .eq("user_id", user.id);
+
   const mappedLevel = sliderPercentToModelLevel(level);
   await updateModelWithFeedback({
     userId: user.id,

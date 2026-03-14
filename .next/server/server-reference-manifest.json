@@ -1,46 +1,5 @@
 {
-  "node": {
-    "0792ebc4a925d24389c7980f3fd3654728d7045c": {
-      "workers": {
-        "app/intoxication/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22C%3A%5C%5CUsers%5C%5C13917%5C%5CDesktop%5C%5CVibe%20Coding%5C%5Clib%5C%5Cactions%5C%5Cdrinks.ts%22%2C%5B%22searchDrinks%22%2C%22updateDrinkLog%22%2C%22addDrink%22%2C%22saveDailyIntoxication%22%2C%22deleteDrinkLog%22%5D%5D%5D&__client_imported__=true!"
-      },
-      "layer": {
-        "app/intoxication/page": "action-browser"
-      }
-    },
-    "5b6ffb09c1a00559b8d05fdb2d5da1ea63a7c7fb": {
-      "workers": {
-        "app/intoxication/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22C%3A%5C%5CUsers%5C%5C13917%5C%5CDesktop%5C%5CVibe%20Coding%5C%5Clib%5C%5Cactions%5C%5Cdrinks.ts%22%2C%5B%22searchDrinks%22%2C%22updateDrinkLog%22%2C%22addDrink%22%2C%22saveDailyIntoxication%22%2C%22deleteDrinkLog%22%5D%5D%5D&__client_imported__=true!"
-      },
-      "layer": {
-        "app/intoxication/page": "action-browser"
-      }
-    },
-    "6ec854a98d5c03a654dcfa1d447207ca9eb15dcf": {
-      "workers": {
-        "app/intoxication/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22C%3A%5C%5CUsers%5C%5C13917%5C%5CDesktop%5C%5CVibe%20Coding%5C%5Clib%5C%5Cactions%5C%5Cdrinks.ts%22%2C%5B%22searchDrinks%22%2C%22updateDrinkLog%22%2C%22addDrink%22%2C%22saveDailyIntoxication%22%2C%22deleteDrinkLog%22%5D%5D%5D&__client_imported__=true!"
-      },
-      "layer": {
-        "app/intoxication/page": "action-browser"
-      }
-    },
-    "bd22cffaae01b01b1ac7d4d134718bfbf8a79e79": {
-      "workers": {
-        "app/intoxication/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22C%3A%5C%5CUsers%5C%5C13917%5C%5CDesktop%5C%5CVibe%20Coding%5C%5Clib%5C%5Cactions%5C%5Cdrinks.ts%22%2C%5B%22searchDrinks%22%2C%22updateDrinkLog%22%2C%22addDrink%22%2C%22saveDailyIntoxication%22%2C%22deleteDrinkLog%22%5D%5D%5D&__client_imported__=true!"
-      },
-      "layer": {
-        "app/intoxication/page": "action-browser"
-      }
-    },
-    "e9e43a9f1fb0350b2727c33fcb42d7b1ac8804b2": {
-      "workers": {
-        "app/intoxication/page": "(action-browser)/./node_modules/next/dist/build/webpack/loaders/next-flight-action-entry-loader.js?actions=%5B%5B%22C%3A%5C%5CUsers%5C%5C13917%5C%5CDesktop%5C%5CVibe%20Coding%5C%5Clib%5C%5Cactions%5C%5Cdrinks.ts%22%2C%5B%22searchDrinks%22%2C%22updateDrinkLog%22%2C%22addDrink%22%2C%22saveDailyIntoxication%22%2C%22deleteDrinkLog%22%5D%5D%5D&__client_imported__=true!"
-      },
-      "layer": {
-        "app/intoxication/page": "action-browser"
-      }
-    }
-  },
+  "node": {},
   "edge": {},
-  "encryptionKey": "oX0dWafy2WYate/NVYDDFORCsyQL9QGlBKYSLbxyTKc="
+  "encryptionKey": "i8A1HVXlM9QpVumobVwm36TlbKcP1njO9Dyu5QgocZs="
 }

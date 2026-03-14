@@ -6,7 +6,6 @@ import { deleteDrinkLog } from "@/lib/actions/drinks";
 import { IntoxicationSlider } from "@/components/diary/IntoxicationSlider";
 import { EditableDrinkLogItem } from "@/components/diary/EditableDrinkLogItem";
 import { BacPredictionSection } from "@/components/diary/BacPredictionSection";
-import { IntoxicationPredictionCard } from "@/components/diary/IntoxicationPredictionCard";
 import {
   calculateBacPrediction,
   getDefaultReferenceTime,
@@ -138,8 +137,6 @@ export default async function DiaryDatePage({
           hasEligibleDrinks={hasEligibleDrinks}
           detailHref={`/diary/${date}/bac?month=${monthParam}`}
         />
-
-        <IntoxicationPredictionCard date={date} savedSliderPercent={currentIntoxication} />
 
         <section className="mt-4 rounded-2xl border border-slate-700 bg-slate-800/40 p-4 shadow-sm shadow-black/20">
           <h2 className="mb-3 text-sm font-medium text-slate-200">Records</h2>

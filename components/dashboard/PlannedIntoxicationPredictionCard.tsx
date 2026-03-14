@@ -5,21 +5,24 @@ import { useEffect, useState } from "react";
 import { DrinkSearchInput } from "@/components/diary/DrinkSearchInput";
 
 type PlannedPredictionResponse = {
-  current_predicted_intoxication_level: number;
-  current_predicted_score: number;
-  current_predicted_percent: number;
-  peak_predicted_intoxication_level: number;
-  peak_predicted_percent: number;
-  peak_predicted_at_minute: number;
-  peak_bac: number;
-  peak_bac_at_minute: number;
-  sober_at_minute: number | null;
-  total_alcohol_grams: number;
-  features: {
-    current_BAC: number;
-    alcohol_grams: number;
-    drink_count: number;
+  predicted_peak_intoxication_100: number;
+  predicted_peak_band: "minimal" | "light buzz" | "moderate" | "strong" | "very strong";
+  baseline_peak_intoxication_100: number;
+  personalized_peak_intoxication_100: number | null;
+  baseline_weight: number;
+  personalized_weight: number;
+  historical_session_count: number;
+  planned_features: {
+    planned_total_alcohol_grams: number;
+    planned_duration_minutes: number;
+    planned_drink_count: number;
+    planned_drinking_pace_gph: number;
   };
+  similar_sessions: Array<{
+    session_id: string;
+    peak_intoxication_100: number;
+    distance: number;
+  }>;
   error?: string;
 };
 
@@ -31,8 +34,6 @@ type PlannedDrink = {
   abv: number;
   note?: string;
 };
-
-const LEVELS = ["Sober", "Tipsy", "Buzzed", "Drunk", "Wasted"];
 
 export function PlannedIntoxicationPredictionCard() {
   const [plannedDrinks, setPlannedDrinks] = useState<PlannedDrink[]>([]);
@@ -132,9 +133,6 @@ export function PlannedIntoxicationPredictionCard() {
   function removeDrink(id: string) {
     setPlannedDrinks((prev) => prev.filter((d) => d.id !== id));
   }
-
-  const currentLevel = result ? clamp(result.current_predicted_intoxication_level, 0, 4) : null;
-  const peakLevel = result ? clamp(result.peak_predicted_intoxication_level, 0, 4) : null;
 
   return (
     <section className="mt-4 rounded-2xl border border-emerald-500/30 bg-slate-800/50 p-5 shadow-sm shadow-black/20">
@@ -295,27 +293,31 @@ export function PlannedIntoxicationPredictionCard() {
         </p>
       ) : null}
 
-      {result && currentLevel != null && peakLevel != null ? (
+      {result ? (
         <div className="mt-3 rounded-lg border border-slate-700 bg-slate-900/40 p-3">
-          <p className="text-xs text-slate-400">Current Predicted Level</p>
+          <p className="text-xs text-slate-400">Predicted Peak Intoxication (0-100)</p>
           <p className="mt-1 text-base font-semibold text-slate-100">
-            {currentLevel} - {LEVELS[currentLevel]} (~{result.current_predicted_percent}%)
+            {Number(result.predicted_peak_intoxication_100).toFixed(1)}% -{" "}
+            {result.predicted_peak_band}
           </p>
           <p className="mt-1 text-xs text-slate-400">
-            Score: {Number(result.current_predicted_score).toFixed(3)} | BAC:{" "}
-            {Number(result.features.current_BAC).toFixed(4)} | Alcohol:{" "}
-            {Number(result.features.alcohol_grams).toFixed(1)}g
+            Baseline: {Number(result.baseline_peak_intoxication_100).toFixed(1)}% | Personalized:{" "}
+            {result.personalized_peak_intoxication_100 != null
+              ? `${Number(result.personalized_peak_intoxication_100).toFixed(1)}%`
+              : "N/A"}
           </p>
           <p className="mt-2 text-xs text-slate-400">
-            Peak: {peakLevel} - {LEVELS[peakLevel]} (~{result.peak_predicted_percent}%) at{" "}
-            {formatMinutes(result.peak_predicted_at_minute)} | Peak BAC:{" "}
-            {Number(result.peak_bac).toFixed(4)} at {formatMinutes(result.peak_bac_at_minute)}
+            Blend weights {"->"} baseline {Number(result.baseline_weight).toFixed(2)}, personalized{" "}
+            {Number(result.personalized_weight).toFixed(2)} | History sessions:{" "}
+            {result.historical_session_count}
           </p>
           <p className="mt-1 text-xs text-slate-500">
-            {result.sober_at_minute != null
-              ? `Estimated time to sober: ${formatMinutes(result.sober_at_minute)}`
-              : "Estimated time to sober: beyond forecast window"}{" "}
-            | Total alcohol: {Number(result.total_alcohol_grams).toFixed(1)}g
+            Planned alcohol:{" "}
+            {Number(result.planned_features.planned_total_alcohol_grams).toFixed(1)}g | Pace:{" "}
+            {Number(result.planned_features.planned_drinking_pace_gph).toFixed(1)} g/h
+          </p>
+          <p className="mt-1 text-xs text-slate-500">
+            Similar sessions used: {result.similar_sessions.length}
           </p>
         </div>
       ) : null}
@@ -337,8 +339,3 @@ function clampFloat(value: number, min: number, max: number) {
   return clamp(value, min, max);
 }
 
-function formatMinutes(minutes: number) {
-  const hours = Math.floor(minutes / 60);
-  const mins = minutes % 60;
-  return `${hours}h ${String(mins).padStart(2, "0")}m`;
-}
