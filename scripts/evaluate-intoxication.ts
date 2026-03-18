@@ -1,6 +1,7 @@
 import type { PlannedSessionFeatures, SessionSummary } from "@/lib/intoxication/types";
 import { predictBySessionRetrieval } from "@/lib/intoxication/retrieval";
 import {
+  applyPaceNudge,
   blendPredictions,
   getPersonalizationWeight,
   predictBaselinePeakIntoxication,
@@ -23,6 +24,12 @@ type Metrics = {
   within5: number;
   within10: number;
   within15: number;
+};
+
+type MonotonicCheckResult = {
+  checks: Array<{ label: string; pass: boolean; detail: string }>;
+  passCount: number;
+  total: number;
 };
 
 const MOCK_PROFILE = {
@@ -84,22 +91,24 @@ const MOCK_SESSIONS: SessionSummary[] = [
 ];
 
 function main() {
-  const rows = leaveOneOutBacktest(MOCK_SESSIONS, 2);
+  const defaultBeta = 0.1;
+  const rows = leaveOneOutBacktest(MOCK_SESSIONS, 2, defaultBeta);
   printRows(rows);
-  printMetrics("K=2 (default)", rows);
+  printMetrics(`K=2, beta=${defaultBeta.toFixed(2)}`, rows);
   printCalibrationDiagnostics(rows);
-  printKComparison(MOCK_SESSIONS, [1, 2, 3]);
-  runScenarioSanityTests(MOCK_SESSIONS);
-  runMonotonicScenarioChecks(MOCK_SESSIONS);
+  printKComparison(MOCK_SESSIONS, [1, 2, 3], defaultBeta);
+  runScenarioSanityTests(MOCK_SESSIONS, defaultBeta);
+  printMonotonicScenarioChecks(MOCK_SESSIONS, defaultBeta);
+  printBetaSweep(MOCK_SESSIONS, [0.08, 0.1, 0.12, 0.15]);
   runBlendSanityTests();
   runBaselineCenterednessCheck(MOCK_SESSIONS);
 }
 
-function leaveOneOutBacktest(sessions: SessionSummary[], k: number) {
+function leaveOneOutBacktest(sessions: SessionSummary[], k: number, beta: number) {
   return sessions.map((target) => {
     const history = sessions.filter((s) => s.session_id !== target.session_id);
     const planned = toPlannedFeatures(target);
-    const predicted = predictPeakWithBlend(planned, history, k);
+    const predicted = predictPeakWithBlend(planned, history, k, beta);
 
     return {
       session_id: target.session_id,
@@ -111,7 +120,12 @@ function leaveOneOutBacktest(sessions: SessionSummary[], k: number) {
   });
 }
 
-function predictPeakWithBlend(planned: PlannedSessionFeatures, history: SessionSummary[], k: number) {
+function predictPeakWithBlend(
+  planned: PlannedSessionFeatures,
+  history: SessionSummary[],
+  k: number,
+  beta: number
+) {
   const baseline = predictBaselinePeakIntoxication({
     planned,
     profile: MOCK_PROFILE,
@@ -121,11 +135,19 @@ function predictPeakWithBlend(planned: PlannedSessionFeatures, history: SessionS
     history,
     topK: k,
   });
-  return blendPredictions({
+  const blended = blendPredictions({
     baselinePeak: baseline,
     personalizedPeak: retrieval?.predicted_peak_intoxication_100 ?? null,
     historySessionCount: history.length,
-  }).predicted_peak_intoxication_100;
+  });
+  const nudged = applyPaceNudge({
+    blendedPeak100: blended.predicted_peak_intoxication_100,
+    plannedPaceGph: planned.planned_drinking_pace_gph,
+    historyMedianPaceGph: median(history.map((s) => s.drinking_pace_gph)),
+    beta,
+    maxNudgeAbs: 12,
+  });
+  return nudged.predicted_peak_intoxication_100;
 }
 
 function toPlannedFeatures(summary: SessionSummary): PlannedSessionFeatures {
@@ -185,9 +207,9 @@ function printCalibrationDiagnostics(rows: BacktestRow[]) {
   console.log(`Overly centered: ${overlyCentered ? "YES" : "NO"}`);
 }
 
-function printKComparison(sessions: SessionSummary[], ks: number[]) {
+function printKComparison(sessions: SessionSummary[], ks: number[], beta: number) {
   const rows = ks.map((k) => {
-    const backtestRows = leaveOneOutBacktest(sessions, k);
+    const backtestRows = leaveOneOutBacktest(sessions, k, beta);
     const metrics = computeMetrics(backtestRows);
     return {
       K: k,
@@ -201,7 +223,7 @@ function printKComparison(sessions: SessionSummary[], ks: number[]) {
   console.table(rows);
 }
 
-function runScenarioSanityTests(history: SessionSummary[]) {
+function runScenarioSanityTests(history: SessionSummary[], beta: number) {
   const scenarios: Array<{
     name: string;
     grams: number;
@@ -218,7 +240,7 @@ function runScenarioSanityTests(history: SessionSummary[]) {
 
   const rows = scenarios.map((s) => {
     const planned = buildPlannedFromScenario(s.grams, s.durationMinutes, s.drinkCount);
-    const prediction = predictPeakWithBlend(planned, history, 2);
+    const prediction = predictPeakWithBlend(planned, history, 2, beta);
     const topNeighbor = rankSimilarSessions({
       planned,
       history,
@@ -246,44 +268,82 @@ function runScenarioSanityTests(history: SessionSummary[]) {
   console.table(rows);
 }
 
-function runMonotonicScenarioChecks(history: SessionSummary[]) {
-  const lowLong = predictPeakWithBlend(buildPlannedFromScenario(20, 180, 2), history, 2);
-  const lowShort = predictPeakWithBlend(buildPlannedFromScenario(20, 45, 2), history, 2);
-  const mediumLong = predictPeakWithBlend(buildPlannedFromScenario(45, 180, 4), history, 2);
-  const mediumShort = predictPeakWithBlend(buildPlannedFromScenario(45, 45, 4), history, 2);
-  const highLong = predictPeakWithBlend(buildPlannedFromScenario(80, 180, 6), history, 2);
-  const highShort = predictPeakWithBlend(buildPlannedFromScenario(80, 45, 6), history, 2);
+function computeMonotonicScenarioChecks(
+  history: SessionSummary[],
+  beta: number
+): MonotonicCheckResult {
+  const lowLong = predictPeakWithBlend(buildPlannedFromScenario(20, 180, 2), history, 2, beta);
+  const lowShort = predictPeakWithBlend(buildPlannedFromScenario(20, 45, 2), history, 2, beta);
+  const mediumLong = predictPeakWithBlend(buildPlannedFromScenario(45, 180, 4), history, 2, beta);
+  const mediumShort = predictPeakWithBlend(buildPlannedFromScenario(45, 45, 4), history, 2, beta);
+  const highLong = predictPeakWithBlend(buildPlannedFromScenario(80, 180, 6), history, 2, beta);
+  const highShort = predictPeakWithBlend(buildPlannedFromScenario(80, 45, 6), history, 2, beta);
 
+  const checks = [
+    {
+      label: "Fixed grams=20: short >= long",
+      pass: lowShort >= lowLong,
+      detail: `short=${lowShort.toFixed(2)}, long=${lowLong.toFixed(2)}`,
+    },
+    {
+      label: "Fixed grams=45: short >= long",
+      pass: mediumShort >= mediumLong,
+      detail: `short=${mediumShort.toFixed(2)}, long=${mediumLong.toFixed(2)}`,
+    },
+    {
+      label: "Fixed grams=80: short >= long",
+      pass: highShort >= highLong,
+      detail: `short=${highShort.toFixed(2)}, long=${highLong.toFixed(2)}`,
+    },
+    {
+      label: "Fixed duration=45: high >= medium >= low",
+      pass: highShort >= mediumShort && mediumShort >= lowShort,
+      detail: `high=${highShort.toFixed(2)}, medium=${mediumShort.toFixed(2)}, low=${lowShort.toFixed(2)}`,
+    },
+    {
+      label: "Fixed duration=180: high >= medium >= low",
+      pass: highLong >= mediumLong && mediumLong >= lowLong,
+      detail: `high=${highLong.toFixed(2)}, medium=${mediumLong.toFixed(2)}, low=${lowLong.toFixed(2)}`,
+    },
+  ];
+  return {
+    checks,
+    passCount: checks.filter((c) => c.pass).length,
+    total: checks.length,
+  };
+}
+
+function printMonotonicScenarioChecks(history: SessionSummary[], beta: number) {
+  const result = computeMonotonicScenarioChecks(history, beta);
   console.log("\n=== Monotonic Scenario Checks ===");
-  console.log(
-    `Fixed grams=20: short(${lowShort.toFixed(2)}) >= long(${lowLong.toFixed(2)}) -> ${
-      lowShort >= lowLong ? "PASS" : "FAIL"
-    }`
-  );
-  console.log(
-    `Fixed grams=45: short(${mediumShort.toFixed(2)}) >= long(${mediumLong.toFixed(2)}) -> ${
-      mediumShort >= mediumLong ? "PASS" : "FAIL"
-    }`
-  );
-  console.log(
-    `Fixed grams=80: short(${highShort.toFixed(2)}) >= long(${highLong.toFixed(2)}) -> ${
-      highShort >= highLong ? "PASS" : "FAIL"
-    }`
-  );
-  console.log(
-    `Fixed duration=45: high(${highShort.toFixed(2)}) >= medium(${mediumShort.toFixed(
-      2
-    )}) >= low(${lowShort.toFixed(2)}) -> ${
-      highShort >= mediumShort && mediumShort >= lowShort ? "PASS" : "FAIL"
-    }`
-  );
-  console.log(
-    `Fixed duration=180: high(${highLong.toFixed(2)}) >= medium(${mediumLong.toFixed(
-      2
-    )}) >= low(${lowLong.toFixed(2)}) -> ${
-      highLong >= mediumLong && mediumLong >= lowLong ? "PASS" : "FAIL"
-    }`
-  );
+  for (const check of result.checks) {
+    console.log(`${check.label} -> ${check.pass ? "PASS" : "FAIL"} (${check.detail})`);
+  }
+}
+
+function printBetaSweep(sessions: SessionSummary[], betas: number[]) {
+  const rows = betas.map((beta) => {
+    const looRows = leaveOneOutBacktest(sessions, 2, beta);
+    const metrics = computeMetrics(looRows);
+    const actualMin = Math.min(...looRows.map((r) => r.actual_peak));
+    const actualMax = Math.max(...looRows.map((r) => r.actual_peak));
+    const predictedMin = Math.min(...looRows.map((r) => r.predicted_peak));
+    const predictedMax = Math.max(...looRows.map((r) => r.predicted_peak));
+    const ratio =
+      actualMax - actualMin > 0 ? (predictedMax - predictedMin) / (actualMax - actualMin) : 0;
+    const monotonic = computeMonotonicScenarioChecks(sessions, beta);
+    return {
+      beta: beta.toFixed(2),
+      MAE: round(metrics.mae, 2),
+      Within5: `${(metrics.within5 * 100).toFixed(1)}%`,
+      Within10: `${(metrics.within10 * 100).toFixed(1)}%`,
+      Within15: `${(metrics.within15 * 100).toFixed(1)}%`,
+      range_ratio: round(ratio, 2),
+      monotonic_pass: `${monotonic.passCount}/${monotonic.total}`,
+    };
+  });
+  console.log("\n=== Beta Sweep (K=2 Pace Nudge) ===");
+  console.table(rows);
 }
 
 function runBlendSanityTests() {
@@ -396,6 +456,14 @@ function stddev(values: number[], avg: number) {
   const variance =
     values.reduce((sum, v) => sum + Math.pow(v - avg, 2), 0) / Math.max(1, values.length);
   return Math.sqrt(variance);
+}
+
+function median(values: number[]) {
+  if (values.length === 0) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  if (sorted.length % 2 === 1) return sorted[mid];
+  return (sorted[mid - 1] + sorted[mid]) / 2;
 }
 
 function round(value: number, decimals: number) {

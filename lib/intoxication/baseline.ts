@@ -57,3 +57,30 @@ export function blendPredictions(params: {
     personalized_weight: round(personalWeight, 3),
   };
 }
+
+export function applyPaceNudge(params: {
+  blendedPeak100: number;
+  plannedPaceGph: number;
+  historyMedianPaceGph: number | null;
+  beta?: number;
+  maxNudgeAbs?: number;
+}) {
+  const beta = params.beta ?? 0.1;
+  const maxNudgeAbs = params.maxNudgeAbs ?? 12;
+  if (params.historyMedianPaceGph == null || !Number.isFinite(params.historyMedianPaceGph)) {
+    return {
+      predicted_peak_intoxication_100: clamp(round(params.blendedPeak100, 2), 0, 100),
+      pace_nudge: 0,
+      history_median_pace_gph: null,
+    };
+  }
+
+  const rawNudge = beta * (params.plannedPaceGph - params.historyMedianPaceGph);
+  const boundedNudge = clamp(rawNudge, -maxNudgeAbs, maxNudgeAbs);
+  const adjusted = clamp(params.blendedPeak100 + boundedNudge, 0, 100);
+  return {
+    predicted_peak_intoxication_100: round(adjusted, 2),
+    pace_nudge: round(boundedNudge, 3),
+    history_median_pace_gph: round(params.historyMedianPaceGph, 3),
+  };
+}

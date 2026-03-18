@@ -12,6 +12,7 @@ import {
   summarizeSessions,
 } from "@/lib/intoxication/sessionize";
 import {
+  applyPaceNudge,
   blendPredictions,
   predictBaselinePeakIntoxication,
 } from "@/lib/intoxication/baseline";
@@ -127,14 +128,24 @@ export async function predictPlannedPeakIntoxication(params: {
     personalizedPeak: retrieval?.predicted_peak_intoxication_100 ?? null,
     historySessionCount: history.length,
   });
+  const historyMedianPace = median(history.map((s) => s.drinking_pace_gph));
+  const nudged = applyPaceNudge({
+    blendedPeak100: blend.predicted_peak_intoxication_100,
+    plannedPaceGph: planned.planned_drinking_pace_gph,
+    historyMedianPaceGph: historyMedianPace,
+    beta: 0.08,
+    maxNudgeAbs: 12,
+  });
 
   return {
     planned_features: planned,
-    predicted_peak_intoxication_100: blend.predicted_peak_intoxication_100,
+    predicted_peak_intoxication_100: nudged.predicted_peak_intoxication_100,
     baseline_peak_intoxication_100: baselinePeak,
     personalized_peak_intoxication_100: retrieval?.predicted_peak_intoxication_100 ?? null,
     baseline_weight: blend.baseline_weight,
     personalized_weight: blend.personalized_weight,
+    pace_nudge: nudged.pace_nudge,
+    history_median_pace_gph: nudged.history_median_pace_gph,
     historical_session_count: history.length,
     similar_sessions: retrieval?.neighbors.map((n) => ({
       session_id: n.session.session_id,
@@ -152,4 +163,12 @@ function modelLevelToPercent(level: number) {
   const anchors = [0, 20, 40, 60, 100];
   const idx = clamp(Math.round(level), 0, anchors.length - 1);
   return anchors[idx] ?? 0;
+}
+
+function median(values: number[]) {
+  if (values.length === 0) return null;
+  const sorted = [...values].sort((a, b) => a - b);
+  const mid = Math.floor(sorted.length / 2);
+  if (sorted.length % 2 === 1) return sorted[mid];
+  return (sorted[mid - 1] + sorted[mid]) / 2;
 }

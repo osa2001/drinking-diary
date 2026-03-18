@@ -1,4 +1,21 @@
 {
+  "/_not-found/page": "app/_not-found/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
+  "/api/intoxication/planned-predict/route": "app/api/intoxication/planned-predict/route.js",
+  "/api/intoxication/feedback/route": "app/api/intoxication/feedback/route.js",
+  "/api/intoxication/update/route": "app/api/intoxication/update/route.js",
+  "/api/intoxication/predict/route": "app/api/intoxication/predict/route.js",
+  "/diary/[date]/bac/page": "app/diary/[date]/bac/page.js",
+  "/api/intoxication/predict-planned/route": "app/api/intoxication/predict-planned/route.js",
+  "/diary/page": "app/diary/page.js",
+  "/diary/[date]/page": "app/diary/[date]/page.js",
+  "/diary/add/page": "app/diary/add/page.js",
+  "/intoxication/page": "app/intoxication/page.js",
+  "/login/page": "app/login/page.js",
+  "/profile/page": "app/profile/page.js",
   "/page": "app/page.js",
-  "/dashboard/page": "app/dashboard/page.js"
+  "/profile/recipes/add/page": "app/profile/recipes/add/page.js",
+  "/signup/page": "app/signup/page.js",
+  "/profile/recipes/page": "app/profile/recipes/page.js",
+  "/profile/details/page": "app/profile/details/page.js"
 }
